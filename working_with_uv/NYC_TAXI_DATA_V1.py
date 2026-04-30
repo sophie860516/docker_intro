@@ -49,7 +49,9 @@ parse_dates = [
 @click.option('--pg-host', default='localhost', help='PostgreSQL host')
 @click.option('--pg-port', default='5432', help='PostgreSQL port')
 @click.option('--pg-db', default='ny_taxi', help='PostgreSQL database')
-def run(year, month, chunksize, pg_user, pg_password, pg_host, pg_port, pg_db):
+@click.option('--target-table', default='yellow_taxi_data', help='Target table name in PostgreSQL')
+
+def run(year, month, chunksize, pg_user, pg_password, pg_host, pg_port, pg_db, target_table):
     #ingest data in csv file into postgres
     prefix = 'https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/'
     url = f'{prefix}yellow_tripdata_{year}-{month:02d}.csv.gz'
@@ -68,12 +70,14 @@ def run(year, month, chunksize, pg_user, pg_password, pg_host, pg_port, pg_db):
     first = True
     for df_chunk in tqdm(df_iter):
         if(first):
-            df_chunk.head(0).to_sql(name = 'yellow_taxi_data',con=engine, if_exists='replace')
+            df_chunk.head(0).to_sql(name =target_table,con=engine, if_exists='replace')
+            print(f"\nCreating table {target_table} in PostgreSQL database {pg_db}\n")
             first = False
         else:
-            df_chunk.to_sql(name = 'yellow_taxi_data',con=engine, if_exists='append')
+            df_chunk.to_sql(name = target_table,con=engine, if_exists='append')
 
 if __name__ == "__main__":
+    print("Starting data insertion")
     run()
     print("Data insertion completed")
 
@@ -90,5 +94,6 @@ uv run NYC_TAXI_DATA_V1.py \
     --pg-password=root \
     --pg-host=localhost \
     --pg-port=5432 \
-    --pg-db=ny_taxi
+    --pg-db=ny_taxi \
+    --target-table=yellow_taxi_data_v1
 """
